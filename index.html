@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DreamForge">
+<link rel="manifest" href="manifest.json">
+<title>DreamForge — Offline AI Images</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--s1:#12121a;--s2:#1a1a26;--bd:rgba(255,255,255,.07);--ac:#e8ff47;--ac2:#ff6b35;--tx:#f0f0f5;--mu:rgba(240,240,245,.45);--r:16px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(232,255,71,.06),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 110%,rgba(255,107,53,.07),transparent 60%);pointer-events:none;z-index:0}
+header{position:relative;z-index:1;padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.05em;background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.badge{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ac);border:1px solid rgba(232,255,71,.3);padding:4px 10px;border-radius:20px;background:rgba(232,255,71,.07)}
+main{position:relative;z-index:1;flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;max-width:480px;margin:0 auto;width:100%}
+#sb{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mu);transition:all .3s}
+#sb.loading{border-color:rgba(232,255,71,.3);color:var(--ac)}
+#sb.ready{border-color:rgba(80,255,120,.3);color:#50ff78}
+#sb.error{border-color:rgba(255,80,80,.35);color:#ff6060}
+#sb.gen{border-color:rgba(255,107,53,.4);color:var(--ac2)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+.dot.p{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+#cw{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);aspect-ratio:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+#cw canvas{width:100%;height:100%;object-fit:contain;border-radius:calc(var(--r) - 2px);display:none}
+.ph{display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--mu);text-align:center;padding:24px}
+.ph svg{opacity:.3}
+.ph p{font-size:13px;line-height:1.5}
+#po{position:absolute;inset:0;background:rgba(10,10,15,.88);backdrop-filter:blur(6px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:calc(var(--r) - 2px)}
+#po.on{display:flex}
+.ring{width:60px;height:60px}
+.ring circle{fill:none;stroke-width:3;stroke-linecap:round}
+.ring .tr{stroke:rgba(255,255,255,.07)}
+.ring .fi{stroke:var(--ac);stroke-dasharray:164;stroke-dashoffset:164;transition:stroke-dashoffset .35s ease;transform:rotate(-90deg);transform-origin:center}
+#pp{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--ac);letter-spacing:.05em}
+#pm{font-size:12px;color:var(--mu);text-align:center;max-width:180px;line-height:1.5}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+label{font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+textarea{background:var(--s2);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:300;line-height:1.5;padding:12px 14px;resize:none;width:100%;min-height:76px;transition:border-color .2s;-webkit-appearance:none}
+textarea:focus{outline:none;border-color:rgba(232,255,71,.35)}
+textarea::placeholder{color:rgba(240,240,245,.2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--bd);background:var(--s2);color:var(--mu);cursor:pointer;transition:all .15s;user-select:none;-webkit-user-select:none}
+.chip:active{transform:scale(.95)}
+.chip.on{border-color:rgba(232,255,71,.5);background:rgba(232,255,71,.1);color:var(--ac)}
+#gb{background:linear-gradient(135deg,var(--ac),#c8e832);border:none;border-radius:var(--r);color:#0a0a0f;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em;padding:18px;width:100%;cursor:pointer;transition:all .2s}
+#gb:active{transform:scale(.98)}
+#gb:disabled{opacity:.4;cursor:not-allowed;transform:none}
+#db{display:none;gap:10px}
+#db.on{display:flex}
+#dlb,#cpb{flex:1;background:var(--s1);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+#dlb:active,#cpb:active{background:var(--s2);transform:scale(.97)}
+#ib{display:none;background:linear-gradient(135deg,rgba(232,255,71,.1),rgba(255,107,53,.08));border:1px solid rgba(232,255,71,.2);border-radius:var(--r);padding:14px 16px;flex-direction:column;gap:10px}
+#ib.on{display:flex}
+.ibt{display:flex;align-items:center;justify-content:space-between}
+.ibtl{font-weight:500;font-size:14px}
+.ibsl{font-size:12px;color:var(--mu);margin-top:2px}
+#instbtn{background:var(--ac);border:none;border-radius:8px;color:#0a0a0f;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 16px;cursor:pointer}
+#dis{background:none;border:none;color:var(--mu);cursor:pointer;font-size:18px;padding:0 0 0 8px}
+.note{font-size:11px;color:var(--mu);line-height:1.5;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;border-left:2px solid rgba(232,255,71,.3)}
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s2);border:1px solid var(--bd);border-radius:20px;padding:10px 20px;font-size:13px;color:var(--tx);opacity:0;transition:all .3s ease;pointer-events:none;z-index:100;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{position:relative;z-index:1;text-align:center;padding:10px 20px 22px;font-size:11px;color:rgba(240,240,245,.2);letter-spacing:.05em}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">DreamForge</span>
+  <span class="badge">100% Offline</span>
+</header>
+<main>
+  <div id="ib">
+    <div class="ibt">
+      <div><div class="ibtl">Install on your device</div><div class="ibsl">Works offline · No app store needed</div></div>
+      <button id="dis">×</button>
+    </div>
+    <button id="instbtn">⬇ Add to Home Screen</button>
+  </div>
+
+  <div id="sb" class="ready">
+    <div class="dot" id="dot"></div>
+    <span id="st">Ready — tap Generate to create an image</span>
+  </div>
+
+  <div id="cw">
+    <div class="ph" id="ph">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <rect x="4" y="8" width="36" height="28" rx="4" stroke="white" stroke-width="1.5"/>
+        <circle cx="14" cy="18" r="4" stroke="white" stroke-width="1.5"/>
+        <path d="M4 32l9-8 8 6 6-5 13 11" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p>Your generated image<br>will appear here</p>
+    </div>
+    <canvas id="cv"></canvas>
+    <div id="po">
+      <svg class="ring" viewBox="0 0 60 60">
+        <circle class="tr" cx="30" cy="30" r="26"/>
+        <circle class="fi" id="ra" cx="30" cy="30" r="26"/>
+      </svg>
+      <div id="pp">0%</div>
+      <div id="pm">Starting…</div>
+    </div>
+  </div>
+
+  <div id="db">
+    <button id="dlb">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Save Image
+    </button>
+    <button id="cpb">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M2 10V3a1 1 0 011-1h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Copy
+    </button>
+  </div>
+
+  <div class="card">
+    <label>Prompt</label>
+    <textarea id="pr" placeholder="A golden astronaut in a lavender field at golden hour, cinematic, photorealistic…"></textarea>
+    <label>Style preset</label>
+    <div class="chips" id="ch">
+      <div class="chip on" data-s="">Default</div>
+      <div class="chip" data-s="photorealistic, sharp focus, 8k">Photo</div>
+      <div class="chip" data-s="anime style, vibrant, Studio Ghibli">Anime</div>
+      <div class="chip" data-s="oil painting, impressionist">Oil Paint</div>
+      <div class="chip" data-s="watercolor, soft, dreamy">Watercolor</div>
+      <div class="chip" data-s="pixel art, retro 16-bit">Pixel Art</div>
+      <div class="chip" data-s="dark fantasy, dramatic moody">Dark Fantasy</div>
+      <div class="chip" data-s="flat minimal vector">Minimal</div>
+    </div>
+  </div>
+
+  <button id="gb">GENERATE IMAGE</button>
+
+  <div class="note">
+    ⚡ Uses SD-Turbo (4-step model). On first use ~500 MB of ONNX model files are downloaded once and stored on your device permanently. After that, all generation is 100% offline with no internet needed.
+  </div>
+</main>
+<footer>DreamForge · All AI runs on your device · No data sent anywhere</footer>
+<div id="toast"></div>
+
+<script>if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+<script type="module">
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DreamForge · SD-Turbo in the Browser
+//  Model: schmuell/sd-turbo-ort-web (HuggingFace)
+//  Engine: ONNX Runtime Web (WASM, no GPU needed)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const HF = 'https://huggingface.co/schmuell/sd-turbo-ort-web/resolve/main/';
+
+ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/';
+ort.env.wasm.numThreads = 1;
+
+const $ = id => document.getElementById(id);
+const sb=$('sb'), st=$('st'), dot=$('dot'), gb=$('gb');
+const cv=$('cv'), ph=$('ph'), po=$('po'), ra=$('ra');
+const pp=$('pp'), pm=$('pm'), db=$('db');
+
+let styleAppend='', sessions=null, tokenizer=null;
+
+// ── Status & progress ─────────────────────────────────
+function setStatus(type, msg){ sb.className=type; st.textContent=msg; dot.className='dot'+(type==='loading'||type==='gen'?' p':''); }
+function setProgress(pct,msg){ ra.style.strokeDashoffset=164-(pct/100)*164; pp.textContent=pct+'%'; pm.textContent=msg; }
+function showToast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
+
+// ── Style chips ──────────────────────────────────────
+$('ch').addEventListener('click',e=>{
+  const c=e.target.closest('.chip'); if(!c)return;
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on'); styleAppend=c.dataset.s;
+});
+
+// ── IndexedDB cache ──────────────────────────────────
+async function dbOpen(){ return new Promise((r,j)=>{ const q=indexedDB.open('df-v1',1); q.onupgradeneeded=e=>e.target.result.createObjectStore('f'); q.onsuccess=e=>r(e.target.result); q.onerror=()=>j(q.error); }); }
+async function dbGet(db,k){ return new Promise((r,j)=>{ const q=db.transaction('f','readonly').objectStore('f').get(k); q.onsuccess=()=>r(q.result); q.onerror=()=>j(q.error); }); }
+async function dbPut(db,k,v){ return new Promise((r,j)=>{ const q=db.transaction('f','readwrite').objectStore('f').put(v,k); q.onsuccess=r; q.onerror=()=>j(q.error); }); }
+
+async function getCached(db, name, url, onProg){
+  let buf = await dbGet(db, name);
+  if(buf) return buf;
+  setStatus('loading', `Downloading ${name}…`);
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`HTTP ${res.status} fetching ${name}`);
+  const total = parseInt(res.headers.get('content-length')||'0');
+  const reader = res.body.getReader();
+  const chunks = []; let loaded = 0;
+  while(true){
+    const {done,value} = await reader.read();
+    if(done) break;
+    chunks.push(value); loaded+=value.length;
+    if(total>0 && onProg) onProg(loaded/total);
+  }
+  buf = await new Blob(chunks).arrayBuffer();
+  await dbPut(db, name, buf);
+  return buf;
+}
+
+// ── Simple CLIP BPE tokenizer ────────────────────────
+function buildTokenizer(vocab, mergesTxt){
+  const enc=vocab;
+  const merges=mergesTxt.split('\n').filter(l=>l&&!l.startsWith('#')).map(l=>l.split(' '));
+  const mergeMap={};
+  merges.forEach(([a,b],i)=>{ mergeMap[a+' '+b]=i; });
+
+  const B2U=(()=>{
+    const bs=[...Array(94).keys()].map(i=>i+33).concat([...Array(12).keys()].map(i=>i+161)).concat([...Array(82).keys()].map(i=>i+174));
+    const cs=[...bs]; let n=0;
+    for(let b=0;b<256;b++) if(!bs.includes(b)){bs.push(b);cs.push(256+n);n++;}
+    return Object.fromEntries(bs.map((b,i)=>[b,String.fromCharCode(cs[i])]));
+  })();
+
+  function bpe(tok){
+    let w=tok.split('').map(c=>Array.from(c).map(x=>B2U[x.charCodeAt(0)]).join(''));
+    w[w.length-1]+='</w>';
+    let pairs=[];
+    for(let i=0;i<w.length-1;i++) pairs.push([w[i],w[i+1]]);
+    while(true){
+      let mp=null,mr=Infinity;
+      for(const p of pairs){ const r=mergeMap[p[0]+' '+p[1]]; if(r!==undefined&&r<mr){mr=r;mp=p;} }
+      if(!mp) break;
+      const [a,b]=mp,nw=[]; let i=0;
+      while(i<w.length){ const j=w.indexOf(a,i); if(j===-1){nw.push(...w.slice(i));break;} nw.push(...w.slice(i,j)); if(j<w.length-1&&w[j+1]===b){nw.push(a+b);i=j+2;}else{nw.push(w[j]);i=j+1;} }
+      w=nw; if(w.length===1) break;
+      pairs=[]; for(let i=0;i<w.length-1;i++) pairs.push([w[i],w[i+1]]);
+    }
+    return w;
+  }
+
+  function encode(text){
+    const SOT=enc['<|startoftext|>']??49406;
+    const EOT=enc['<|endoftext|>']??49407;
+    const ids=[SOT];
+    for(const word of (text.toLowerCase().trim().match(/\S+/g)||[])){
+      for(const t of bpe(word)){ const id=enc[t]; if(id!==undefined)ids.push(id); }
+    }
+    ids.push(EOT);
+    while(ids.length<77) ids.push(0);
+    return new Int32Array(ids.slice(0,77));
+  }
+  return {encode};
+}
+
+// ── Scheduler helpers ─────────────────────────────────
+function alphaBar(t, T=1000){
+  const s=0.008, f=x=>Math.cos(((x/T+s)/(1+s))*Math.PI/2)**2;
+  return f(t)/f(0);
+}
+
+// ── Load all models ───────────────────────────────────
+async function loadModels(){
+  if(sessions) return true;
+  gb.disabled=true;
+  try{
+    const db=await dbOpen();
+    const FILES=[
+      ['unet.onnx',       HF+'unet/model.onnx'],
+      ['text_enc.onnx',   HF+'text_encoder/model.onnx'],
+      ['vae_dec.onnx',    HF+'vae_decoder/model.onnx'],
+      ['vocab.json',      HF+'tokenizer/vocab.json'],
+      ['merges.txt',      HF+'tokenizer/merges.txt'],
+    ];
+    const bufs={};
+    for(let i=0;i<FILES.length;i++){
+      const [name,url]=FILES[i];
+      const buf=await getCached(db,name,url,(f)=>{
+        setStatus('loading',`Downloading (${i+1}/${FILES.length}): ${name} ${Math.round(f*100)}%`);
+        setProgress(Math.round(((i+f)/FILES.length)*65),`File ${i+1}/${FILES.length}`);
+      });
+      bufs[name]=buf;
+    }
+    setStatus('loading','Loading models…'); setProgress(68,'Building ONNX sessions…');
+    const opt={executionProviders:['wasm']};
+    const [unet,te,vd]=await Promise.all([
+      ort.InferenceSession.create(bufs['unet.onnx'],opt),
+      ort.InferenceSession.create(bufs['text_enc.onnx'],opt),
+      ort.InferenceSession.create(bufs['vae_dec.onnx'],opt),
+    ]);
+    setProgress(85,'Loading tokenizer…');
+    tokenizer=buildTokenizer(
+      JSON.parse(new TextDecoder().decode(bufs['vocab.json'])),
+      new TextDecoder().decode(bufs['merges.txt'])
+    );
+    sessions={unet,te,vd};
+    setProgress(100,'Models ready!');
+    setStatus('ready','SD-Turbo ready — 100% offline ✓');
+    gb.disabled=false;
+    return true;
+  }catch(err){
+    console.error(err);
+    setStatus('error','Download failed — check internet and try again');
+    gb.disabled=false;
+    return false;
+  }
+}
+
+// ── Generate ──────────────────────────────────────────
+async function generate(){
+  if(!await loadModels()) return;
+  const prompt=$('pr').value.trim();
+  if(!prompt){ showToast('Enter a prompt first'); return; }
+  const fullPrompt=styleAppend?`${prompt}, ${styleAppend}`:prompt;
+
+  gb.disabled=true;
+  db.classList.remove('on');
+  ph.style.display='none'; cv.style.display='none';
+  po.classList.add('on');
+  setStatus('gen','Generating…');
+  setProgress(0,'Encoding text…');
+
+  try{
+    // Tokenize
+    const condIds=tokenizer.encode(fullPrompt);
+    const uncondIds=tokenizer.encode('');
+    const ids=new Int32Array(154);
+    ids.set(uncondIds,0); ids.set(condIds,77);
+
+    // Text encode
+    const textTensor=new ort.Tensor('int32',ids,[2,77]);
+    const teOut=await sessions.te.run({input_ids:textTensor});
+    const embeds=teOut[Object.keys(teOut)[0]]; // [2,77,1024]
+
+    setProgress(12,'Preparing latents…');
+
+    // Init noise [1,4,64,64]
+    const H=64,W=64,C=4,latN=C*H*W;
+    const latents=new Float32Array(latN);
+    for(let i=0;i<latN;i++){
+      const u1=Math.random()||1e-10,u2=Math.random();
+      latents[i]=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+    }
+    let latTensor=new ort.Tensor('float32',latents,[1,C,H,W]);
+
+    // SD-Turbo: 4 denoising steps, no CFG
+    const STEPS=4;
+    const ts=[999,749,499,249];
+
+    for(let i=0;i<STEPS;i++){
+      const t=ts[i];
+      setProgress(15+Math.round((i/STEPS)*55),`Denoising ${i+1}/${STEPS}…`);
+
+      const acp=alphaBar(t);
+      const sigma=Math.sqrt(1-acp);
+      const alpha=Math.sqrt(acp);
+      const scaleFactor=Math.sqrt(acp+(1-acp)); // standard input scaling
+
+      // Use cond embeddings only (no CFG for turbo)
+      const condEmb=new Float32Array(embeds.data.slice(77*1024,2*77*1024));
+      const condT=new ort.Tensor('float32',condEmb,[1,77,1024]);
+
+      // Scale latents
+      const scaled=new Float32Array(latTensor.data.length);
+      for(let j=0;j<scaled.length;j++) scaled[j]=latTensor.data[j]/scaleFactor;
+      const sTensor=new ort.Tensor('float32',scaled,[1,C,H,W]);
+      const tTensor=new ort.Tensor('int64',BigInt64Array.from([BigInt(t)]),[]);
+
+      const uOut=await sessions.unet.run({
+        sample:sTensor, timestep:tTensor, encoder_hidden_states:condT
+      });
+      const noise=uOut[Object.keys(uOut)[0]].data;
+
+      // DDIM step
+      const prevT=i+1<STEPS?ts[i+1]:0;
+      const pacpPrev=alphaBar(prevT);
+      const pSigma=Math.sqrt(1-pacpPrev);
+      const pAlpha=Math.sqrt(pacpPrev);
+      const newLat=new Float32Array(latents.length);
+      for(let j=0;j<newLat.length;j++){
+        const x0=(latTensor.data[j]-sigma*noise[j])/alpha;
+        newLat[j]=pAlpha*x0+pSigma*noise[j];
+      }
+      latTensor=new ort.Tensor('float32',newLat,[1,C,H,W]);
+    }
+
+    setProgress(75,'Decoding to pixels…');
+
+    // VAE decode — scale by 1/0.18215
+    const vLat=new Float32Array(latTensor.data.length);
+    for(let i=0;i<vLat.length;i++) vLat[i]=latTensor.data[i]/0.18215;
+    const vTensor=new ort.Tensor('float32',vLat,[1,C,H,W]);
+    const vOut=await sessions.vd.run({latent_sample:vTensor});
+    const pixels=vOut[Object.keys(vOut)[0]].data; // [1,3,512,512]
+
+    setProgress(92,'Rendering canvas…');
+
+    // Draw
+    cv.width=512; cv.height=512;
+    const ctx=cv.getContext('2d');
+    const img=ctx.createImageData(512,512);
+    const N=512*512;
+    for(let i=0;i<N;i++){
+      const r=pixels[i], g=pixels[N+i], b=pixels[2*N+i];
+      img.data[4*i]=Math.max(0,Math.min(255,Math.round((r/2+0.5)*255)));
+      img.data[4*i+1]=Math.max(0,Math.min(255,Math.round((g/2+0.5)*255)));
+      img.data[4*i+2]=Math.max(0,Math.min(255,Math.round((b/2+0.5)*255)));
+      img.data[4*i+3]=255;
+    }
+    ctx.putImageData(img,0,0);
+
+    setProgress(100,'Done!');
+    po.classList.remove('on');
+    cv.style.display='block';
+    db.classList.add('on');
+    setStatus('ready','Image ready ✓');
+
+  }catch(err){
+    console.error(err);
+    po.classList.remove('on');
+    ph.style.display='';
+    setStatus('error','Generation failed: '+(err.message||'unknown'));
+    showToast('Error: '+(err.message||'failed'));
+  }
+  gb.disabled=false;
+}
+
+gb.addEventListener('click',generate);
+
+$('dlb').addEventListener('click',()=>{
+  const a=document.createElement('a');
+  a.download=`dreamforge-${Date.now()}.png`;
+  a.href=cv.toDataURL('image/png'); a.click();
+  showToast('Image saved!');
+});
+
+$('cpb').addEventListener('click',async()=>{
+  try{ cv.toBlob(async b=>{ await navigator.clipboard.write([new ClipboardItem({'image/png':b})]); showToast('Copied!'); }); }
+  catch{ showToast('Copy unavailable — use Save'); }
+});
+
+// Install PWA
+let dp;
+$('ib'); // ref
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); dp=e;
+  $('ib').classList.add('on');
+});
+$('instbtn').addEventListener('click',async()=>{
+  if(dp){ dp.prompt(); await dp.userChoice; $('ib').classList.remove('on'); dp=null; }
+});
+$('dis').addEventListener('click',()=>$('ib').classList.remove('on'));
+window.addEventListener('appinstalled',()=>{ $('ib').classList.remove('on'); showToast('DreamForge installed!'); });
+
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isSA=window.matchMedia('(display-mode:standalone)').matches;
+if(isIOS&&!isSA){
+  $('ib').classList.add('on');
+  document.querySelector('.ibtl').textContent='Install on iPhone/iPad';
+  document.querySelector('.ibsl').textContent='Tap Share → Add to Home Screen';
+  $('instbtn').style.display='none';
+}
+</script>
+</body>
+</html>
